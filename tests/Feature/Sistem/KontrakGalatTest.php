@@ -50,7 +50,7 @@ it('meneruskan kode aturan dari GalatDomain', function () {
 
 it('menyembunyikan rincian galat tak terduga saat debug mati', function () {
     config(['app.debug' => false]);
-    
+
     Route::middleware('api')->get('/api/_uji/meledak', function () {
         throw new RuntimeException('SQLSTATE: kata sandi basis data bocor');
     });
