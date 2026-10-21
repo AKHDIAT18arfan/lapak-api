@@ -1,0 +1,34 @@
+/config/auth.php                              @AKHDIATarfan
+/app/Models/Sesi.php                          @AKHDIATarfan
+/app/Services/PenerbitSesi.php                @AKHDIATarfan
+/app/Services/PemeriksaSesi.php               @AKHDIATarfan
+/app/Services/PemeriksaKataSandi.php          @AKHDIATarfan
+/app/Http/Controllers/MasukController.php     @AKHDIATarfan
+/app/Http/Controllers/SesiController.php      @AKHDIATarfan
+
+/app/Http/Controllers/KatalogController.php   @elangfebryan20
+/app/Http/Controllers/TokoSayaController.php  @ahmadbagasmahardika50
+/app/Http/Controllers/ProdukSayaController.php @elangfebryan20
+/routes/api/katalog.php                       @elangfebryan20
+
+/app/Services/PenyusunBelanja.php             @BalaPradifa05
+/app/Services/LayananKeranjang.php           @BalaPradifa05
+/app/Http/Controllers/KeranjangController.php @BalaPradifa05
+/routes/api/belanja.php                       @BalaPradifa05
+
+/app/Console/Commands/PeriksaBuku.php         @DimasAryaPutra
+/app/Http/Controllers/DompetController.php    @DimasAryaPutra
+/routes/api/dompet.php                        @DimasAryaPutra
+/tests/Feature/Dompet/                        @DimasAryaPutra
+
+/routes/api/sistem.php                        @nabhanherwastyo
+/routes/console.php                           @nabhanherwastyo
+/tests/TestCase.php                           @nabhanherwastyo
+/tests/Pest.php                               @nabhanherwastyo
+/app/Console/Commands/PangkasSesi.php         @nabhanherwastyo
+/config/lapak.php                             @nabhanherwastyo
+/database/seeders/DatabaseSeeder.php          @nabhanherwastyo
+
+# Pengecualian. Pada CODEOWNERS, pola yang cocok PALING AKHIR yang menang,
+# jadi pengecualian ditulis di bawah aturan umumnya.
+/app/Domain/Sesi/                             @AKHDIATarfan
