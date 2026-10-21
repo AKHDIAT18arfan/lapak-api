@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Services;
@@ -15,7 +16,7 @@ final class PenerbitSesi
 {
     /**
      * @return array{0: Sesi, 1: string} sesi dan kunci utuhnya. Kunci utuh hanya ada di sini,
-     * saat ini; setelah fungsi ini selesai tidak dapat diperoleh lagi.
+     *                                   saat ini; setelah fungsi ini selesai tidak dapat diperoleh lagi.
      */
     public function terbitkan(
         Pengguna $pengguna,
@@ -25,7 +26,7 @@ final class PenerbitSesi
     ): array {
         $kunci = KunciSesi::baru((string) Str::ulid());
         $sesi = new Sesi;
-        
+
         $sesi->forceFill([
             'pengenal' => $kunci->pengenal,
             'pengguna_id' => $pengguna->id,
@@ -38,10 +39,10 @@ final class PenerbitSesi
             'terakhir_dipakai_pada' => now(),
             'kedaluwarsa_pada' => now()->addDays(config('lapak.sesi.masa_hidup_hari')),
         ])->save();
-        
+
         return [$sesi, $kunci->teks()];
     }
-    
+
     /**
      * Mengganti rahasia tanpa mengganti sesi. Kunci lama mati saat itu juga.
      * Dipanggil setiap kali kedudukan sesi naik: setelah konfirmasi kata sandi sekarang,
@@ -51,15 +52,15 @@ final class PenerbitSesi
     {
         $kunci = KunciSesi::baru($sesi->pengenal);
         $sesi->forceFill(['hash_kunci' => $kunci->hash()])->save();
-        
+
         return $kunci->teks();
     }
-    
+
     public function tandaiSegar(Sesi $sesi): void
     {
         $sesi->forceFill(['dikonfirmasi_pada' => now()])->save();
     }
-    
+
     public function cabut(Sesi $sesi): void
     {
         if ($sesi->dicabut_pada === null) {

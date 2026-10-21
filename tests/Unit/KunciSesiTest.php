@@ -10,14 +10,14 @@ it('berbentuk awalan, pengenal, titik, lalu 64 karakter heksadesimal', function 
 
 it('tidak pernah menghasilkan rahasia yang sama dua kali', function () {
     $kunci = array_map(fn () => KunciSesi::baru(ULID_UJI)->teks(), range(1, 50));
-    
+
     expect(array_unique($kunci))->toHaveCount(50);
 });
 
 it('dapat diurai kembali dan cocok dengan hash-nya sendiri', function () {
     $asli = KunciSesi::baru(ULID_UJI);
     $terurai = KunciSesi::urai($asli->teks());
-    
+
     expect($terurai->pengenal)->toBe(ULID_UJI)
         ->and($terurai->hash())->toBe($asli->hash())
         ->and($terurai->cocok($asli->hash()))->toBeTrue();
@@ -26,7 +26,7 @@ it('dapat diurai kembali dan cocok dengan hash-nya sendiri', function () {
 it('menyimpan hash, bukan rahasia', function () {
     $kunci = KunciSesi::baru(ULID_UJI);
     $rahasia = explode('.', $kunci->teks())[1];
-    
+
     expect($kunci->hash())->toBe(hash('sha256', $rahasia))
         ->and($kunci->hash())->not->toContain($rahasia);
 });
