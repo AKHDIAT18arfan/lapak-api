@@ -25,6 +25,7 @@ return [
         'segar_menit' => (int) env('LAPAK_SESI_SEGAR_MENIT', 10),
         // terakhir_dipakai_pada tidak ditulis ulang lebih sering dari ini.
         'jeda_sentuh_detik' => 60,
+        'simpan_hari' => 30,
     ],
 
     'laju' => [
