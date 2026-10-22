@@ -125,4 +125,10 @@ final class BukuBesar
 
         return $dompet;
     }
+
+    /** Hanya membaca. Dipakai pintu GET agar melihat saldo tidak pernah menulis ke basis data. */
+    public function cariDompetPenjual(Pengguna $penjual): ?Dompet
+    {
+        return Dompet::query()->where('kode', 'penjual:'.$penjual->id)->first();
+    }
 }
