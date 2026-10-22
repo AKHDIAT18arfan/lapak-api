@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use App\Exceptions\SesiTidakSegar;
@@ -7,7 +9,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class SesiSegar
+final class SesiSegar
 {
     /**
      * Memastikan sesi pengguna masih segar (baru saja dikonfirmasi).
