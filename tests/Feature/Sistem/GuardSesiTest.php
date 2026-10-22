@@ -2,7 +2,6 @@
 
 use App\Models\Pengguna;
 use App\Models\Sesi;
-use App\Services\PenerbitSesi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
