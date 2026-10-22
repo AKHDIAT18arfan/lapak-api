@@ -26,4 +26,10 @@ return [
         // terakhir_dipakai_pada tidak ditulis ulang lebih sering dari ini.
         'jeda_sentuh_detik' => 60,
     ],
+
+    'laju' => [
+        'masuk_per_akun' => 5,
+        'masuk_per_ip' => 20,
+        'konfirmasi' => 5,
+    ],
 ];
