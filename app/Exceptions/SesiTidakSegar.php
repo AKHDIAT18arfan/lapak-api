@@ -1,21 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exceptions;
 
-use Exception;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
-class SesiTidakSegar extends Exception
+final class SesiTidakSegar extends GalatDomain
 {
-    /**
-     * Render HTTP response untuk exception ini.
-     */
-    public function render(Request $request): JsonResponse
+    public function __construct()
     {
-        return response()->json([
-            'pesan' => 'Sesi membutuhkan konfirmasi ulang.',
-            'tindakan' => 'POST /api/v1/sesi/konfirmasi',
-        ], 403);
+        parent::__construct(
+            'LP-15',
+            'Tindakan ini memerlukan konfirmasi kata sandi.',
+            403
+        );
     }
 }
