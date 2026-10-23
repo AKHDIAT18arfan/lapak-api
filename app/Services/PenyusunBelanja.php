@@ -25,7 +25,7 @@ final class PenyusunBelanja
      * Dipakai keranjang: isi keranjang bisa menjadi basi, dan membukanya tidak boleh gagal.
      *
      * @param  list<array{produk_id: int, kuantitas: int}>  $butir
-     * @param  Pengguna|null  $pembeli bila diisi, produk dari toko miliknya ikut ditandai (LP-5)
+     * @param  Pengguna|null  $pembeli  bila diisi, produk dari toko miliknya ikut ditandai (LP-5)
      * @return array{0: list<RincianToko>, 1: list<ButirBermasalah>}
      */
     public function pilah(array $butir, ?Pengguna $pembeli = null): array
