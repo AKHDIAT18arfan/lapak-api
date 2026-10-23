@@ -28,7 +28,7 @@ final class TokoSayaController extends Controller
         $pemilik = $request->user();
 
         if (Toko::query()->milik($pemilik)->exists()) {
-            throw new SudahPunyaToko();
+            throw new SudahPunyaToko;
         }
 
         $toko = new Toko($request->validated());
@@ -36,14 +36,14 @@ final class TokoSayaController extends Controller
         // Tiga kolom ini tidak ada di $fillable dan tidak pernah dibaca dari badan permintaan.
         // Status sengaja tidak diisi: nilai bawaan basis data adalah "menunggu" (LP-3).
         $toko->pemilik_id = $pemilik->id;
-        $toko->slug = Str::slug($request->validated('nama')) . '-' . Str::lower(Str::random(5));
+        $toko->slug = Str::slug($request->validated('nama')).'-'.Str::lower(Str::random(5));
 
         try {
             $toko->save();
         } catch (UniqueConstraintViolationException) {
             // Dua permintaan bersamaan sama-sama lolos pemeriksaan exists() di atas.
             // Indeks unik pada pemilik_id yang menghentikan permintaan kedua.
-            throw new SudahPunyaToko();
+            throw new SudahPunyaToko;
         }
 
         return $this->sukses(TokoSayaResource::make($toko->refresh()), 201);
