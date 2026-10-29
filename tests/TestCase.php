@@ -5,11 +5,20 @@ namespace Tests;
 use App\Models\Pengguna;
 use App\Models\Sesi;
 use App\Services\PenerbitSesi;
+use Database\Seeders\PeranIzinSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
-    /** Sesi yang diterbitkan pemanggilan sebagai() terakhir. */
+    /**
+     * Peran dan izin adalah data acuan, bukan data contoh: tanpa keduanya
+     * aplikasi tidak dapat memutuskan apa pun. Setiap uji yang memakai
+     * basis data memulainya dengan tabel itu terisi.
+     */
+    protected $seed = true;
+
+    protected $seeder = PeranIzinSeeder::class;
+
     protected ?Sesi $sesiUji = null;
 
     /**
