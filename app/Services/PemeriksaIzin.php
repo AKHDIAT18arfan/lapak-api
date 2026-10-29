@@ -9,6 +9,10 @@ use App\Models\Pengguna;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Satu-satunya tempat pertanyaan "pengguna ini punya izin itu?" dijawab (LP-2).
+ * Jawabannya diingat sebentar supaya setiap permintaan tidak mengulang gabungan tiga tabel.
+ */
 final class PemeriksaIzin
 {
     private const KUNCI_GENERASI = 'izin:generasi';
@@ -18,6 +22,9 @@ final class PemeriksaIzin
         return in_array($izin->value, $this->daftar($pengguna), true);
     }
 
+    /**
+     * @return list<string> nama izin, urut abjad, tanpa kembaran
+     */
     public function daftar(Pengguna $pengguna): array
     {
         return Cache::remember(
@@ -32,11 +39,16 @@ final class PemeriksaIzin
         Cache::forget($this->kunci($pengguna));
     }
 
+    /**
+     * Menaikkan nomor generasi. Seluruh ingatan lama memakai nomor sebelumnya pada kuncinya,
+     * sehingga tidak pernah terbaca lagi dan habis sendiri oleh batas waktunya.
+     */
     public function lupakanSemua(): void
     {
         Cache::forever(self::KUNCI_GENERASI, $this->generasi() + 1);
     }
 
+    /** @return list<string> */
     private function bacaDariBasisData(Pengguna $pengguna): array
     {
         return DB::table('izin')

@@ -30,6 +30,9 @@ class PeranIzinSeeder extends Seeder
             $peran->izin()->sync(array_map(fn (NamaIzin $i) => $izin[$i->value], $nama->izinBawaan()));
         }
 
+        // Pemetaan mungkin baru saja berubah: izin yang telanjur diingat tidak boleh dipakai lagi.
+        app(PemeriksaIzin::class)->lupakanSemua();
+
         app(PemeriksaIzin::class)->lupakanSemua();
     }
 }
