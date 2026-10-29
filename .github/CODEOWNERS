@@ -1,0 +1,50 @@
+# ==============================================================================
+# CODEOWNERS - Lapak API
+# ==============================================================================
+# Aturan peninjauan otomatis berbasis jalur berkas/folder.
+# Setiap perubahan pada folder atau berkas terkait akan otomatis meminta tinjauan
+# dari pemilik domain yang ditentukan.
+# ==============================================================================
+
+# Identitas, Akses, dan Pengguna (Arfan)
+/app/Http/Controllers/SesiController.php           @AKHDIAT18arfan
+/app/Http/Controllers/RegistrasiController.php     @AKHDIAT18arfan
+/app/Http/Controllers/MasukController.php          @AKHDIAT18arfan
+/app/Http/Controllers/PeranPenggunaController.php   @AKHDIAT18arfan
+/app/Services/PengelolaPeran.php                   @AKHDIAT18arfan
+/app/Policies/PenggunaPolicy.php                    @AKHDIAT18arfan
+/app/Console/Commands/BeriPeran.php                 @AKHDIAT18arfan
+/database/factories/PenggunaFactory.php            @AKHDIAT18arfan
+/tests/Feature/Identitas/                           @AKHDIAT18arfan
+
+# Katalog, Toko, dan Moderasi (Elang & Bagas)
+/app/Http/Controllers/TokoSayaController.php       @elangfebryan20 @ahmadbagasmahardika50
+/app/Http/Controllers/ProdukSayaController.php     @elangfebryan20 @ahmadbagasmahardika50
+/app/Http/Controllers/ModerasiTokoController.php   @elangfebryan20 @ahmadbagasmahardika50
+/app/Services/ModerasiToko.php                      @elangfebryan20 @ahmadbagasmahardika50
+/app/Policies/TokoPolicy.php                        @elangfebryan20 @ahmadbagasmahardika50
+/tests/Feature/Katalog/                            @elangfebryan20 @ahmadbagasmahardika50
+
+# Belanja dan Transisi Pesanan (Bala)
+/app/Http/Controllers/KeranjangController.php       @balasyahda05
+/app/Domain/Pesanan/                                @balasyahda05
+/tests/Feature/Belanja/                            @balasyahda05
+/tests/Unit/AturanTransisiTest.php                 @balasyahda05
+
+# Keuangan, Dompet, dan Buku Besar (Dimas)
+/app/Http/Controllers/DompetController.php          @DimasAryaPutra
+/app/Http/Controllers/BukuBesarController.php      @DimasAryaPutra
+/app/Services/BukuBesar.php                         @DimasAryaPutra
+/tests/Feature/Dompet/                             @DimasAryaPutra
+
+# RBAC, Sistem, Core Otorisasi, & Matriks (Nabhan)
+/app/Enums/NamaPeran.php                            @nabhanherwastyo
+/app/Enums/NamaIzin.php                             @nabhanherwastyo
+/app/Models/Peran.php                               @nabhanherwastyo
+/app/Models/Izin.php                                @nabhanherwastyo
+/app/Services/PemeriksaIzin.php                     @nabhanherwastyo
+/app/Http/Middleware/PeriksaIzin.php                @nabhanherwastyo
+/app/Console/Commands/MatriksIzin.php              @nabhanherwastyo
+/database/seeders/PeranIzinSeeder.php              @nabhanherwastyo
+/database/migrations/*_buat_tabel_peran_dan_izin.php @nabhanherwastyo
+/tests/Feature/Sistem/                              @nabhanherwastyo
