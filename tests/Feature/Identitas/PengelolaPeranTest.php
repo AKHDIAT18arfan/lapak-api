@@ -57,7 +57,6 @@ it('mencabut peran dan izin yang dibawanya', function () {
 it('mencabut seluruh sesi pengguna setiap kali perannya berubah', function () {
     $tini = Pengguna::factory()->pembeli()->create();
     $penerbit = app(PenerbitSesi::class);
-
     [, $kunciLaptop] = $penerbit->terbitkan($tini, 'Laptop');
     [, $kunciPonsel] = $penerbit->terbitkan($tini, 'Ponsel');
 
@@ -69,11 +68,10 @@ it('mencabut seluruh sesi pengguna setiap kali perannya berubah', function () {
 
 it('membiarkan sesi tetap berlaku bila tidak ada peran yang berubah', function () {
     $sri = Pengguna::factory()->penjual()->create();
-
     [, $kunci] = app(PenerbitSesi::class)->terbitkan($sri, 'Laptop');
 
-    $this->pengelola->beri($sri, NamaPeran::Penjual); // sudah dipegang
-    $this->pengelola->cabut($sri, NamaPeran::Admin); // tidak dipegang
+    $this->pengelola->beri($sri, NamaPeran::Penjual);   // sudah dipegang
+    $this->pengelola->cabut($sri, NamaPeran::Admin);    // tidak dipegang
 
     $this->denganKunci($kunci)->getJson('/api/v1/saya')->assertOk();
 });
@@ -81,7 +79,6 @@ it('membiarkan sesi tetap berlaku bila tidak ada peran yang berubah', function (
 it('tidak menyentuh sesi pengguna lain', function () {
     $tini = Pengguna::factory()->pembeli()->create();
     $andi = Pengguna::factory()->pembeli()->create();
-
     [, $kunciAndi] = app(PenerbitSesi::class)->terbitkan($andi, 'Laptop Andi');
 
     $this->pengelola->beri($tini, NamaPeran::Penjual);

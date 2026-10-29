@@ -68,16 +68,16 @@ final class PenerbitSesi
         }
     }
 
-   /**
-   * Mencabut seluruh sesi seorang pengguna di semua perangkat.
-   *
-   * @return int jumlah sesi yang dicabut
-   */
-   public function cabutSemua(Pengguna $pengguna): int
-   {
-    return Sesi::query()
-        ->berlaku()
-        ->where('pengguna_id', $pengguna->id)
-        ->update(['dicabut_pada' => now()]);
-   }
+    /**
+     * Mencabut seluruh sesi seorang pengguna di semua perangkat.
+     *
+     * @return int jumlah sesi yang dicabut
+     */
+    public function cabutSemua(Pengguna $pengguna): int
+    {
+        return Sesi::query()
+            ->berlaku()
+            ->where('pengguna_id', $pengguna->id)
+            ->update(['dicabut_pada' => now()]);
+    }
 }
