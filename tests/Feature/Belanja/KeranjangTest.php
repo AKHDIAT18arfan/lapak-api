@@ -17,8 +17,10 @@ function isiKeranjang(Pengguna $pengguna, Produk $produk, int $kuantitas): void
 }
 
 beforeEach(function () {
-    $this->andi = Pengguna::factory()->create();
-    $this->batik = Toko::factory()->create(['nama' => 'Batik Bu Sri', 'ongkir_rupiah' => 12_000]);
+    $this->andi = Pengguna::factory()->pembeli()->create();
+    $this->sri = Pengguna::factory()->penjual()->create();
+    $this->batik = Toko::factory()->for($this->sri, 'pemilik')
+        ->create(['nama' => 'Batik Bu Sri', 'ongkir_rupiah' => 12_000]);
     $this->kain = Produk::factory()->for($this->batik)->create([
         'nama' => 'Kain Batik Cap', 'harga_rupiah' => 185_000, 'stok' => 5,
     ]);
@@ -79,7 +81,7 @@ it('memisahkan butir yang tidak lagi dapat dibeli tanpa menggagalkan keranjang',
 it('tidak pernah menampilkan keranjang pengguna lain', function () {
     isiKeranjang($this->andi, $this->kain, 2);
 
-    $this->sebagai(Pengguna::factory()->create())->getJson('/api/v1/keranjang')
+    $this->sebagai(Pengguna::factory()->pembeli()->create())->getJson('/api/v1/keranjang')
         ->assertOk()
         ->assertJsonPath('data.pesanan', []);
 });
@@ -104,9 +106,7 @@ it('tidak menyimpan harga kiriman klien di mana pun (LP-6)', function () {
 });
 
 it('menolak penjual yang memasukkan produk tokonya sendiri (LP-5)', function () {
-    $sri = $this->batik->pemilik;
-
-    $this->sebagai($sri)->putJson("/api/v1/keranjang/butir/{$this->kain->id}", ['kuantitas' => 1])
+    $this->sebagai($this->sri)->putJson("/api/v1/keranjang/butir/{$this->kain->id}", ['kuantitas' => 1])
         ->assertUnprocessable()
         ->assertJsonPath('galat.kode', 'LP-5');
 
@@ -163,7 +163,7 @@ it('membatasi jumlah produk berbeda dalam satu keranjang', function () {
 });
 
 it('menghapus butir dan mengosongkan keranjang tanpa menyentuh keranjang orang lain', function () {
-    $dewi = Pengguna::factory()->create();
+    $dewi = Pengguna::factory()->pembeli()->create();
 
     isiKeranjang($dewi, $this->kain, 1);
     isiKeranjang($this->andi, $this->kain, 2);
@@ -179,4 +179,21 @@ it('menghapus butir dan mengosongkan keranjang tanpa menyentuh keranjang orang l
 
     $this->sebagai($dewi)->getJson('/api/v1/keranjang')
         ->assertJsonPath('data.total_bayar.rupiah', 197_000);
+});
+
+it('menolak akun yang tidak memegang izin keranjang.kelola', function (string $pemegang) {
+    $this->sebagai(Pengguna::factory()->{$pemegang}()->create());
+
+    $this->getJson('/api/v1/keranjang')
+        ->assertForbidden()
+        ->assertJsonPath('galat.kode', 'DITOLAK');
+    $this->putJson("/api/v1/keranjang/butir/{$this->kain->id}", ['kuantitas' => 1])->assertForbidden();
+
+    expect(Keranjang::count())->toBe(0);
+})->with(['admin', 'keuangan', 'auditor']);
+
+it('tetap membuka simulasi belanja bagi pengunjung tanpa akun', function () {
+    $this->postJson('/api/v1/simulasi-belanja', [
+        'butir' => [['produk_id' => $this->kain->id, 'kuantitas' => 1]],
+    ])->assertOk();
 });
