@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Route;
 Route::post('simulasi-belanja', SimulasiBelanjaController::class)->name('belanja.simulasi');
 
 // Keranjang selalu milik pengguna yang sedang masuk.
-Route::middleware('auth:sesi')
+// Hanya pemegang izin keranjang.kelola: akun staff tidak berbelanja memakai akun dinasnya.
+Route::middleware(['auth:sesi', 'izin:keranjang.kelola'])
     ->prefix('keranjang')
     ->name('keranjang.')
     ->whereNumber('produkId')
