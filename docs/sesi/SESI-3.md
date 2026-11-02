@@ -1,6 +1,6 @@
 # Papan Sesi 3: Peran, Izin, dan Kewenangan atas Objek
 
-- **Integrator Sesi**: Bala (`@akun-bala`)
+- **Integrator Sesi**: Bala (`@BalaPradifa05`)
 - **Titik Berangkat**: Tag `sesi-2`
 - **Target Tag**: `sesi-3`
 
@@ -11,7 +11,7 @@
 1. Memunculkan sistem **RBAC (Role-Based Access Control)** berbasis izin ($LP-2$). Kode hanya bertanya "punya izin ini?", tidak pernah "apakah ia admin?".
 2. Memastikan seluruh pemeriksaan izin dilakukan oleh middleware **sebelum kerangka kerja mencari objek dari alamat** ($SubstituteBindings$).
 3. Menegakkan pemisahan tugas (Separation of Duties): tidak ada peran super-admin yang memegang seluruh izin, dan admin tidak memiliki izin membaca buku besar uang.
-4. Menerapkan pintu tunggal perubahan peran (`PengelolaPeran`) yang sekaligus melupakan ingatan izin ($cache$) dan mencabut seluruh sesi akun sasaran.
+4. Menerapkan pintu tunggal perubahan peran (`PengelolaPeran`) yang sekaligus melupakan ingatan izin (`cache`) dan mencabut seluruh sesi akun sasaran.
 5. Menjaga otorisasi tingkat objek menggunakan kueri berlingkup dan `Policy` (mencegah benturan kepentingan).
 6. Menegakkan **Matriks Otorisasi** sebagai pengujian otomatis CI atas seluruh rute terlindung API.
 
@@ -74,7 +74,7 @@
 
 ## E. Catatan & Titipan untuk Sesi 4 (Dimas - Integrator)
 
-1. **Aturan Transisi Pesanan**: `App\Domain\Pesanan\AturanTransisi` telah diuji secara terisolasi namun belum dihubungkan ke rute HTTP.
+1. **Aturan Transisi Pesanan**: `App\Domain\Pesanan\AturanTransisi` telah diuji secara terisolasi namun belum dihubungkan ke rute/controller HTTP.
 2. **Pesanan Milik Orang Lain**: Saat rute pesanan dibuat pada Sesi 4, gunakan `Policy` / kueri berlingkup agar pesanan milik pengguna lain dijawab **404 TIDAK DITEMUKAN**, bukan 403.
-3. **Pemberlakuan Kunci Stok & Saldo**: Penggunaan UPDATE bersyarat pada Sesi 3 perlu ditingkatkan dengan penguncian stok ($pessimistic\ locking$) pada proses *checkout* transaksi.
-4. **Log Audit**: Persetujuan toko dan perubahan peran di Sesi 3 siap disambungkan ke tabel audit pada Sesi 5.
+3. **Pemberlakuan Kunci Stok & Saldo**: Penggunaan UPDATE bersyarat pada Sesi 3 belum cukup untuk menangani persaingan (*race condition*), sehingga perlu ditingkatkan dengan penguncian stok (*pessimistic locking*) pada proses *checkout* transaksi.
+4. **Log Audit**: Persetujuan toko dan perubahan peran di Sesi 3 belum dicatat ke log audit dan siap disambungkan ke tabel audit pada Sesi 5.
