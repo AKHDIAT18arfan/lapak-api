@@ -7,7 +7,6 @@ use App\Enums\NamaPeran;
 use App\Models\Dompet;
 use App\Models\MutasiSaldo;
 use App\Models\Pengguna;
-use App\Models\Peran;
 use App\Services\BukuBesar;
 use App\Services\PengelolaPeran;
 
@@ -117,10 +116,10 @@ it('menutup dompet begitu peran penjual dicabut', function () {
     $sri = Pengguna::factory()->penjual()->create();
     $this->sebagai($sri)->getJson('/api/v1/dompet')->assertOk();
 
-    // Cabut peran lewat PengelolaPeran (bukan via relasi $sri->peran()->detach)
+    // Cabut melalui PengelolaPeran agar cache dihapus & sesi disegarkan
     app(PengelolaPeran::class)->cabut($sri, NamaPeran::Penjual);
 
-    // Kunci lama mati bersama perannya (401), dan setelah masuk ulang pintu dompet tertutup (403)
+    // Kunci lama mati bersama perannya (401). Setelah masuk ulang, pintu dompet tertutup (403).
     $this->getJson('/api/v1/dompet')->assertUnauthorized();
     $this->sebagai($sri)->getJson('/api/v1/dompet')->assertForbidden();
 });
