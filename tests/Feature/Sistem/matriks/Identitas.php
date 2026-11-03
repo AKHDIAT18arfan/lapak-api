@@ -13,6 +13,8 @@ return [
     'PATCH api/v1/toko-saya/produk/{id}' => '*',
     'DELETE api/v1/toko-saya/produk/{id}' => '*',
 
+    'GET api/v1/alamat' => ['pembeli'],
+
     'GET api/v1/admin/pengguna' => ['admin'],
     'PUT api/v1/admin/pengguna/{id}/peran/{peran}' => ['admin'],
     'DELETE api/v1/admin/pengguna/{id}/peran/{peran}' => ['admin'],
