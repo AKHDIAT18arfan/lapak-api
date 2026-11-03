@@ -18,6 +18,15 @@ return [
         'butir_maksimum' => 20,
         'kuantitas_maksimum' => 99,
     ],
+
+    'transaksi' => [
+        // LP-15: checkout di atas nilai ini menuntut sesi segar.
+        'batas_segar_rupiah' => (int) env('LAPAK_BATAS_SEGAR_RUPIAH', 2_000_000),
+        // Permintaan per menit, per sesi, untuk pintu yang mengubah uang atau stok.
+        'laju_per_menit' => 10,
+        'alamat_maksimum' => 5,
+    ],
+
     // LP-14 dan LP-15: umur kunci sesi.
     'sesi' => [
         'masa_hidup_hari' => (int) env('LAPAK_SESI_MASA_HIDUP_HARI', 7),
