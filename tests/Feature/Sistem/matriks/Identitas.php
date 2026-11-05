@@ -14,6 +14,9 @@ return [
     'DELETE api/v1/toko-saya/produk/{id}' => '*',
 
     'GET api/v1/alamat' => ['pembeli'],
+    'POST api/v1/alamat' => ['pembeli'],
+    'PUT api/v1/alamat/{id}/utama' => ['pembeli'],
+    'DELETE api/v1/alamat/{id}' => ['pembeli'],
 
     'GET api/v1/admin/pengguna' => ['admin'],
     'PUT api/v1/admin/pengguna/{id}/peran/{peran}' => ['admin'],
