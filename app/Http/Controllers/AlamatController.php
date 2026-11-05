@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AlamatRequest;
 use App\Http\Resources\AlamatResource;
 use App\Models\Alamat;
+use App\Services\BukuAlamat;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class AlamatController extends Controller
 {
-    /** GET /alamat: alamat milik pengguna sesi, alamat utama lebih dulu. */
+    public function __construct(private readonly BukuAlamat $buku) {}
+
     public function index(Request $request): JsonResponse
     {
         $alamat = Alamat::query()
@@ -21,5 +24,26 @@ final class AlamatController extends Controller
             ->get();
 
         return $this->sukses(AlamatResource::collection($alamat));
+    }
+
+    public function store(AlamatRequest $request): JsonResponse
+    {
+        $alamat = $this->buku->tambah($request->user(), $request->validated());
+
+        return $this->sukses(AlamatResource::make($alamat), 201);
+    }
+
+    public function utama(Request $request, int $id): JsonResponse
+    {
+        $alamat = $this->buku->jadikanUtama($request->user(), $id);
+
+        return $this->sukses(AlamatResource::make($alamat));
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $this->buku->hapus($request->user(), $id);
+
+        return $this->sukses();
     }
 }
