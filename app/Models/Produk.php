@@ -69,6 +69,13 @@ final class Produk extends Model
             ->whereHas('toko', fn (Builder $toko) => $toko->where('status', StatusToko::Aktif));
     }
 
+    /** Syarat yang sama dengan scopeTampil, untuk baris yang sudah di tangan beserta tokonya. */
+    public function sedangTampil(): bool
+    {
+        return $this->status === StatusProduk::Aktif
+            && $this->toko->status === StatusToko::Aktif;
+    }
+
     /**
      * @param  Builder<Produk>  $kueri
      * @param  array<string, mixed>  $saringan  hasil validasi KatalogRequest
