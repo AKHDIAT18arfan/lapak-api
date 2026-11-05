@@ -3,10 +3,21 @@
 use App\Exceptions\ProdukTidakDapatDibeli;
 use App\Models\Produk;
 use App\Services\PenjagaStok;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->penjaga = app(PenjagaStok::class);
     $this->kain = Produk::factory()->create(['nama' => 'Kain Batik Cap', 'stok' => 5]);
+});
+
+it('menolak dipanggil di luar transaksi, karena kuncinya tidak akan bertahan', function () {
+    DB::rollBack();
+
+    try {
+        expect(fn () => $this->penjaga->ambil([1]))->toThrow(LogicException::class);
+    } finally {
+        DB::beginTransaction();
+    }
 });
 
 it('mengambil produk berkunci nomornya, beserta tokonya', function () {
