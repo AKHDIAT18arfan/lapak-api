@@ -4,18 +4,34 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\Pesanan\PelakuPesanan;
+use App\Domain\Pesanan\StatusPesanan;
+use App\Domain\Uang;
+use App\Enums\JenisDompet;
+use App\Enums\JenisMutasi;
 use App\Enums\StatusPembayaran;
+use App\Exceptions\GalatDomain;
 use App\Models\Checkout;
 use App\Models\Pembayaran;
 use Illuminate\Support\Str;
 
+/**
+ * Satu-satunya pintu perubahan tabel pembayaran.
+ * buat() dan tandaiKedaluwarsa() dipanggil dari dalam transaksi pemanggil; terima() membuka
+ * GembokCheckout sendiri.
+ */
 final class LayananPembayaran
 {
+    public function __construct(
+        private readonly GembokCheckout $gembok,
+        private readonly BukuBesar $buku,
+        private readonly MesinStatusPesanan $mesin,
+    ) {}
+
     /** LP-7: tagihan sebesar total checkout, dengan batas bayar menurut LP-10. */
     public function buat(Checkout $checkout): Pembayaran
     {
         $pembayaran = new Pembayaran;
-
         $pembayaran->forceFill([
             'checkout_id' => $checkout->id,
             'kode' => 'BYR-'.Str::ulid(),
@@ -44,13 +60,79 @@ final class LayananPembayaran
             ->lockForUpdate()
             ->firstOrFail();
 
-        if ($pembayaran->status !== StatusPembayaran::Menunggu
-            || $pembayaran->batas_bayar_pada->isFuture()) {
+        if ($pembayaran->status !== StatusPembayaran::Menunggu || $pembayaran->batas_bayar_pada->isFuture()) {
             return false;
         }
 
         $pembayaran->forceFill(['status' => StatusPembayaran::Kedaluwarsa])->save();
 
         return true;
+    }
+
+    /**
+     * Menerima kabar dari gerbang bahwa sebuah tagihan dibayar. Aman diterima berulang kali:
+     * gerbang pembayaran mengirim ulang webhook yang jawabannya tidak sampai kepadanya.
+     *
+     * @return string "dilunasi" bila kabar ini yang melunasi, "sudah_diproses" bila sudah lunas
+     */
+    public function terima(string $kode, int $jumlahRupiah, string $idPeristiwa): string
+    {
+        $ditemukan = Pembayaran::query()->where('kode', $kode)->firstOrFail();
+
+        return $this->gembok->dalam($ditemukan->checkout_id, function (Checkout $checkout) use (
+            $ditemukan, $jumlahRupiah, $idPeristiwa,
+        ): string {
+            $pembayaran = Pembayaran::query()
+                ->whereKey($ditemukan->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($pembayaran->status === StatusPembayaran::Lunas) {
+                return 'sudah_diproses';
+            }
+
+            if ($pembayaran->status === StatusPembayaran::Kedaluwarsa) {
+                throw new GalatDomain('LP-10', 'Tagihan ini sudah kedaluwarsa.', 409);
+            }
+
+            if ($pembayaran->jumlah_rupiah !== $jumlahRupiah) {
+                throw new GalatDomain(
+                    'JUMLAH_TIDAK_COCOK', 'Jumlah yang dibayar tidak sama dengan tagihan.', 422,
+                );
+            }
+
+            $pembayaran->forceFill([
+                'status' => StatusPembayaran::Lunas,
+                'lunas_pada' => now(),
+                'id_peristiwa' => $idPeristiwa,
+            ])->save();
+
+            $this->tahanDana($checkout, $pembayaran);
+
+            return 'dilunasi';
+        });
+    }
+
+    /** LP-12: uang pembeli masuk escrow, satu pemindahan per pesanan. Pesanan ditandai dibayar. */
+    private function tahanDana(Checkout $checkout, Pembayaran $pembayaran): void
+    {
+        $luar = $this->buku->dompetSistem(JenisDompet::Eksternal);
+        $escrow = $this->buku->dompetSistem(JenisDompet::Escrow);
+        $semua = $checkout->pesanan()->orderBy('id')->get();
+
+        foreach ($semua as $pesanan) {
+            $this->mesin->pindahkan($pesanan, StatusPesanan::Dibayar, PelakuPesanan::Sistem);
+        }
+
+        foreach ($semua as $pesanan) {
+            $this->buku->pindahkan(
+                $luar,
+                $escrow,
+                Uang::dari($pesanan->total_rupiah),
+                JenisMutasi::DanaMasuk,
+                $pesanan->nomor,
+                "Pembayaran {$pembayaran->kode}",
+            );
+        }
     }
 }
