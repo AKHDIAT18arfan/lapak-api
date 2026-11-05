@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Enums\NamaPeran;
 use App\Enums\StatusAkun;
 use App\Models\Pengguna;
 use App\Models\Peran;
+use Database\Seeders\PeranIzinSeeder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -38,6 +41,7 @@ class PenggunaFactory extends Factory
     public function denganPeran(NamaPeran ...$peran): static
     {
         return $this->afterCreating(function (Pengguna $pengguna) use ($peran) {
+            $this->pastikanPeranAda();
             $nama = array_map(fn (NamaPeran $p) => $p->value, $peran);
             $idPeran = Peran::query()->whereIn('nama', $nama)->pluck('id');
             $pengguna->peran()->syncWithoutDetaching($idPeran);
@@ -68,5 +72,12 @@ class PenggunaFactory extends Factory
     public function auditor(): static
     {
         return $this->denganPeran(NamaPeran::Auditor);
+    }
+
+    private function pastikanPeranAda(): void
+    {
+        if (Peran::query()->count() === 0) {
+            $this->seed(PeranIzinSeeder::class);
+        }
     }
 }
