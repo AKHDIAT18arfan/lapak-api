@@ -42,7 +42,7 @@ final class SimulasiBayar extends Command
             : $pembayaran->jumlah_rupiah;
 
         $kabar = [
-            'id_peristiwa' => 'evt_' . bin2hex(random_bytes(8)),
+            'id_peristiwa' => 'evt_'.bin2hex(random_bytes(8)),
             'kode_pembayaran' => $pembayaran->kode,
             'jumlah_rupiah' => $jumlah,
         ];
