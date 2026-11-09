@@ -38,14 +38,24 @@ final class PembatalanOtomatis
                 return false;
             }
 
+            $kembali = [];
+
             foreach ($checkout->pesanan()->with('butir')->orderBy('id')->get() as $pesanan) {
                 $this->mesin->pindahkan(
                     $pesanan, StatusPesanan::Dibatalkan, PelakuPesanan::Sistem, self::ALASAN,
                 );
 
                 foreach ($pesanan->butir as $butir) {
-                    $this->stok->kembalikan($butir->produk_id, $butir->kuantitas);
+                    $kembali[$butir->produk_id] = ($kembali[$butir->produk_id] ?? 0)
+                        + $butir->kuantitas;
                 }
+            }
+
+            // Urutan kunci tim: seluruh pesanan dulu, lalu produk urut nomor menaik.
+            ksort($kembali);
+
+            foreach ($kembali as $idProduk => $kuantitas) {
+                $this->stok->kembalikan($idProduk, $kuantitas);
             }
 
             return true;
