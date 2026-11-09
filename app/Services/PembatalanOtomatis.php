@@ -52,6 +52,8 @@ final class PembatalanOtomatis
             }
 
             // Urutan kunci tim: seluruh pesanan dulu, lalu produk urut nomor menaik.
+            // menaik. Checkout mengunci produk dengan urutan yang sama. Bila di sini stok
+            // dikembalikan menurut urutan butir, keduanya dapat saling menunggu selamanya.
             ksort($kembali);
 
             foreach ($kembali as $idProduk => $kuantitas) {
