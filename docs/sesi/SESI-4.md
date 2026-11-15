@@ -1,82 +1,59 @@
-# Papan Sesi 4: Keamanan Transaksi
+# Sesi 4 — Transaksi, Konkurensi, Idempotensi, dan Webhook Pembayaran
 
-* **Integrator Sesi**: Dimas (`@DimasAryaPutra`)
-* **Titik Berangkat**: Tag `sesi-3`
-* **Target Tag**: `sesi-4`
-
----
-
-## A. Sasaran Sesi 4
-
-1. Melindungi transaksi checkout dan pembayaran dari kondisi balapan (*race condition*) dan kebuntuan (*deadlock*) menggunakan penguncian baris (*pessimistic locking*) MySQL.
-2. Menegakkan **Tangga Urutan Kunci Baris (1 s.d. 7)** secara disiplin di seluruh domain untuk mencegah kebuntuan (*deadlock*).
-3. Menerapkan idempotensi pada checkout dan pemrosesan pembayaran untuk menjamin pemrosesan transaksi tepat satu kali (*exactly-once semantics*).
-4. Menerapkan verifikasi webhook gerbang pembayaran dengan tanda tangan digital HMAC-SHA256 untuk menangkal serangan replay dan manipulasi data.
-5. Menegakkan transaksi escrow: saldo ditahan saat pembayaran lunas dan diteruskan/dikembalikan secara terisolasi.
-6. Menguji ketahanan sistem dengan skenario uji balapan (*concurrency race tests*) menggunakan runner balapan.
+## 1. Ringkasan Tujuan Sesi
+Sesi 4 berfokus pada pengamanan integritas data transaksi pada kondisi akses bersamaan (*high concurrency*) serta keandalan komunikasi dengan *payment gateway*:
+1. **Migrasi Mesin Uji ke MySQL (`lapak` & `lapak_uji`):** Menggantikan SQLite untuk pengujian konkurensi agar penguncian baris (*row-level locking*) berjalan nyata.
+2. **Transaksi & Penguncian Pesimistis (*Pessimistic Locking*):** Membungkus mutasi kritis dengan `DB::transaction()` dan `lockForUpdate()` untuk mencegah *race condition* dan stok minus (*overselling*).
+3. **Pencegahan Deadlock (*Lock Ordering*):** Mengurutkan penguncian baris produk berdasarkan `produk_id` secara menaik (`ASC`) pada alur checkout maupun pembatalan.
+4. **Idempotensi Request (`Idempotency-Key`):** Mencegah pemrosesan ganda akibat *retry* jaringan pada endpoint `POST` yang bersifat mutatif.
+5. **Kontrak Pembayaran & Keamanan Webhook:** Penyelarasan atribut pembayaran (`total_rupiah`), validasi tanda tangan HMAC (`LAPAK_GATEWAY_RAHASIA`), serta penanganan callback pembayaran secara idempoten.
 
 ---
 
-## B. Jawaban atas Titipan Sesi 3
+## 2. Pembagian Peran Tim (BEBAND)
 
-1. **Aturan Transisi Pesanan**: `App\Domain\Pesanan\AturanTransisi` disambungkan ke rute/controller HTTP via `MesinStatusPesanan` dan diverifikasi dengan penguncian baris.
-2. **Pesanan Milik Orang Lain**: Semua kueri pesanan menggunakan scope pengguna aktif sehingga akses ke pesanan pengguna lain dijawab **404 Not Found** (bukan 403 Forbidden).
-3. **Pemberlakuan Kunci Stok & Saldo**: Mengganti pembaruan bersyarat sederhana dengan penguncian eksplisit (`SELECT ... FOR UPDATE`) yang mematuhi urutan tangga kunci baris.
-
----
-
-## C. Tujuh Keputusan Rancangan Sesi 4
-
-1. **Basis Data Transaksional**: Menggunakan MySQL 8 / MariaDB dengan tingkat isolasi `REPEATABLE-READ` sebagai basis data standar transaksi.
-2. **Induk Bersama `checkout` (LP-7)**: Tabel `pesanan` (D3) dan `pembayaran` (D4) keduanya menunjuk ke `checkout` (D3) untuk menghindari ketergantungan melingkar antar-domain.
-3. **Kunci Baris Induk-Dulu**: Kunci baris induk (`checkout`) harus didapatkan via `GembokCheckout` sebelum menyentuh status pesanan, pembayaran, stok produk, atau saldo dompet.
-4. **Penguncian Berurutan ID Menaik**: Penguncian banyak baris (pada tabel `produk` dan `dompet`) wajib diurutkan berdasarkan ID secara menaik (`sortById`) untuk mengeliminasi potensi *deadlock*.
-5. **Validasi HMAC Badan Mentah**: Verifikasi tanda tangan HMAC pada webhook dilakukan atas isi badan mentah HTTP (`$request->getContent()`) sebelum diparse ke JSON.
-6. **Idempotensi Berbasis Middleware**: Header `X-Idempotency-Key` dicatat di awal transaksi dalam tabel `kunci_idempotensi` untuk mencegah eksekusi ulang operasi mutating yang sama.
-7. **Penanganan Serangan Replay**: Webhook memvalidasi selisih waktu (*timestamp*) masukan maksimal 5 menit (300 detik) untuk menangkal pembentukan ulang permintaan.
+| Anggota | Fokus Domain / Tugas Utama |
+| :--- | :--- |
+| **Arfan** | Konfigurasi database MySQL (`lapak` & `lapak_uji`), transaksi & *pessimistic locking* pada alur checkout/stok |
+| **Nabhan** | Pengurutan kunci (*lock ordering*) pada pembatalan & pengembalian stok untuk mencegah deadlock |
+| **Bagas & Elang** | Middleware idempotensi (`Idempotency-Key`), penyimpanan respons kunci, dan klasifikasi rute `POST_BERKUNCI` / `POST_TANPA_KUNCI` |
+| **Dimas** | Integrator cabang, kontrak pembayaran (`total_rupiah`), verifikasi HMAC signature webhook pembayaran, serta penutup dokumentasi |
+| **Bala** | Pengujian Pest MySQL (`RuteIdempotenTest`), simulasi konkurensi `lapak:balapan`, dan verifikasi manual end-to-end (`curl`) |
 
 ---
 
-## D. Urutan Kunci Baris (Tangga 7 Anak)
+## 3. Perubahan Teknis & Mekanisme Perlindungan
 
-| Urut | Baris | Dikunci oleh | Pemilik |
-| :---: | :--- | :--- | :--- |
-| **1** | `pengguna`, lalu `alamat` miliknya | `BukuAlamat` | Arfan |
-| **2** | `keranjang`, lalu `butir_keranjang` | `LayananCheckout` | Bala |
-| **3** | `checkout` | `GembokCheckout` | Bala |
-| **4** | `pembayaran` | `LayananPembayaran` | Dimas |
-| **5** | `pesanan` | `MesinStatusPesanan` | Bala |
-| **6** | `produk`, urut nomor menaik | `PenjagaStok` | Bagas & Elang |
-| **7** | `dompet`, urut nomor menaik | `BukuBesar` | Dimas |
+### A. Penguncian Pesimistis & Urutan Kunci (`Lock Ordering`)
+- Seluruh operasi pemotongan stok saat checkout dan pengembalian stok saat pembatalan dibungkus dalam `DB::transaction()`.
+- Baris stok dikunci menggunakan `->lockForUpdate()` setelah diurutkan berdasarkan `produk_id` secara menaik (`orderBy('produk_id')`) agar dua transaksi konkuren tidak saling mengunci secara silang (*circular wait*).
 
----
+### B. Middleware Idempotensi
+- Permintaan ke endpoint pada daftar `POST_BERKUNCI` wajib menyertakan header `Idempotency-Key`.
+- Permintaan pertama menyimpan sidik jari payload dan hasil respons; permintaan ulang dengan kunci dan payload identik langsung mengembalikan respons tersimpan tanpa mengeksekusi ulang logika bisnis.
+- Seluruh endpoint `POST` didaftarkan secara eksplisit ke `POST_BERKUNCI` atau `POST_TANPA_KUNCI` sesuai cakupan aksesnya.
 
-## E. Urutan Merge Pull Request (PR)
-
-### Jendela A: Kontrak Framework & Transaksi
-- [x] **PR #34**: Pembuka Sesi 4, Papan Sesi, Tangga Kunci, & CODEOWNERS (`sesi-4/pembuka-dimas`)
-- [x] **PR #35 (A1)**: Kontrak Idempotensi & Runner Balapan (`sesi-4/kontrak-idempotensi-nabhan`)
-- [x] **PR #36 (A2)**: Kontrak Alamat & Penjaga Transaksi (`sesi-4/kontrak-alamat-arfan`)
-- [x] **PR #37 (A3)**: Kontrak Stok & Penjaga Stok (`sesi-4/kontrak-stok-bagas-elang`)
-- [x] **PR #38 (A4)**: Kontrak Checkout & Status Pesanan (`sesi-4/kontrak-pesanan-bala`)
-- [x] **PR #39 (A5)**: Kontrak Pembayaran & Gateway (`sesi-4/kontrak-pembayaran-dimas`)
-
-### Jendela B: Implementasi Domain Parallel & Uji Balapan
-- [x] **PR #40 (B1)**: Buku Alamat & Rute Alamat Saya (`sesi-4/alamat-arfan`)
-- [x] **PR #41 (B2)**: Penjaga Stok & Uji Balapan Rebutan Stok (`sesi-4/stok-bagas-elang`)
-- [x] **PR #42 (B3)**: Middleware Idempotensi & Balapan Idempotens (`sesi-4/idempotensi-nabhan`)
-- [x] **PR #43 (B4)**: Webhook HMAC, Escrow, & Uji Webhook Ganda (`sesi-4/webhook-dimas`)
-- [x] **PR #44 (B5)**: Layanan Checkout, Pembatalan Otomatis, & Balapan Lintas Domain (`sesi-4/checkout-bala`)
-- [x] **PR #45 (P1)**: Perbaikan Deadlock Pengurutan Retur Produk (`sesi-4/perbaikan-deadlock-bala`)
-
-### Penutup
-- [x] **PR #46**: Integration Test Transaksi, Periksa Buku Besar, Rekap Sesi 4, & Tag Sesi 4 (`sesi-4/penutup-dimas`)
+### C. Kontrak Pembayaran & Webhook HMAC
+- Penyelarasan skema data pembayaran menggunakan kolom `total_rupiah`.
+- Endpoint webhook memverifikasi tanda tangan HMAC menggunakan secret `LAPAK_GATEWAY_RAHASIA`; permintaan dengan signature tidak valid atau kosong langsung ditolak dengan status `401` (`TANDA_TANGAN_SALAH`).
+- Pembaruan status pembayaran dari webhook dijalankan di dalam transaksi dengan penguncian baris agar callback ganda tidak memicu transisi status atau pencatatan mutasi dua kali.
 
 ---
 
-## F. Catatan & Titipan untuk Sesi 5 (Nabhan - Integrator)
+## 4. Hasil Verifikasi & Pengujian
 
-1. **Penerusan Dana Escrow**: Pembayaran yang telah berada di akun `escrow` perlu dicairkan ke dompet penjual saat pesanan selesai/diterima pembeli pada Sesi 5.
-2. **Pencatatan Audit Transaksi**: Seluruh perubahan status pesanan, eksekusi webhook, dan mutasi escrow siap dikoneksikan ke skema Log Audit pada Sesi 5.
-3. **Manajemen Penanganan Kedaluwarsa Job Queue**: Perintah `lapak:batalkan-kedaluwarsa` disiapkan untuk dijadwalkan secara otomatis melalui Worker / Scheduler pada Sesi 5.
-4. **Proteksi Idempotensi Tingkat Lanjut**: Header idempotensi disiapkan untuk mendukung penanganan rujukan pembayaran eksternal tambahan.
+1. **Suite Pengujian Otomatis (`php artisan test` / Pest di MySQL):**
+   - Seluruh pengujian fitur, konkurensi, validasi HMAC webhook, dan `RuteIdempotenTest` lulus (`PASS`) menggunakan database `lapak_uji`.
+2. **Simulasi Konkurensi (`php artisan lapak:balapan`):**
+   - Simulasi checkout paralel terhadap stok terbatas berjalan konsisten tanpa stok bernilai negatif.
+   - Skenario `php artisan lapak:balapan batal-saat-checkout` berjalan bersih tanpa galat `MySQL 1213 Deadlock`.
+3. **Verifikasi Manual (`curl`):**
+   - Uji kirim ulang `POST` dengan `Idempotency-Key` sama menghasilkan respons identik tanpa duplikasi data.
+   - Uji webhook dengan signature salah mengembalikan `401 TANDA_TANGAN_SALAH`, sedangkan signature valid memperbarui status pembayaran secara konsisten.
+
+---
+
+## 5. Catatan Kendala & Penyelesaian Sesi 4
+- **Penyelarasan `.env` Lokal:** Menambahkan `LAPAK_GATEWAY_RAHASIA` dan konfigurasi koneksi MySQL (`DB_DATABASE=lapak`) dari `.env.example` ke `.env` lokal sebelum menjalankan migrasi dan simulasi.
+- **Rebase Cabang Kontrak Pembayaran:** Melakukan `git rebase --onto origin/main` pada cabang kontrak pembayaran setelah pembaruan skema `total_rupiah` agar riwayat commit tetap bersih tanpa konflik duplikat.
+- **Sinkronisasi Daftar Rute Idempoten:** Mendaftarkan seluruh rute `POST` tambahan dari sesi sebelumnya ke konstanta `POST_BERKUNCI` / `POST_TANPA_KUNCI` agar cakupan pemeriksaan `RuteIdempotenTest` menyeluruh.
