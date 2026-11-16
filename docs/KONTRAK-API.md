@@ -28,3 +28,13 @@ Tabel di atas disalin dari `App\Enums\NamaPeran::izinBawaan()`, satu-satunya tem
 - Tanpa header, rahasia salah, badan diubah, atau selisih waktu lebih dari 5 menit: jawabannya selalu 401 `TANDA_TANGAN_SALAH` yang sama. Rahasia yang kosong menolak seluruh webhook.
 - Badan: `id_peristiwa`, `kode_pembayaran`, `jumlah_rupiah`. Jumlah dicocokkan dengan tagihan di basis data; selisih satu rupiah pun dijawab 422 `JUMLAH_TIDAK_COCOK` dan tidak melunasi apa pun.
 - Kabar yang sama boleh tiba berkali-kali. Yang pertama dijawab `"hasil": "dilunasi"`, sisanya `"hasil": "sudah_diproses"`, dan uangnya dibukukan satu kali.
+- Catatan kunci dan seluruh perubahan data berada dalam satu transaksi basis data. Rute yang memasang `idempoten` karenanya tidak boleh memanggil layanan luar di dalam controller-nya.
+
+## Dana dan pencairan
+- Dana pesanan yang sudah dibayar tertahan di dompet `escrow` dan hanya keluar lewat `LayananDana` di dalam transaksi `GembokCheckout`. Satu pesanan hanya dapat melepaskan atau mengembalikan dana satu kali.
+- Saat pesanan selesai (`LP-8`, `LP-12`), komisi sebesar `lapak.komisi_persen`% dari `subtotal_rupiah` dipindahkan dari `escrow` ke `pendapatan` (`komisi`), sedangkan sisanya (`total_rupiah - komisi`, termasuk ongkir utuh) dipindahkan dari `escrow` ke dompet `penjual:{id}` (`lepas_dana`).
+- Saat pesanan yang sudah dibayar batal, seluruh `total_rupiah` dikembalikan dari `escrow` ke `eksternal` (`pengembalian`).
+- Tagihan `pembayaran` yang masih `menunggu` dapat dibatalkan pembeli sebelum dibayar menjadi `dibatalkan` (`LayananPembayaran::tandaiDibatalkan`). Jika statusnya sudah `lunas` atau `kedaluwarsa`, pembatalan diabaikan.
+- Pencairan dana penjual dicatat pada tabel `pencairan` dengan kode `CAIR-<ULID>` dan memakai dompet penahan `pencairan`: pengajuan menahan saldo dari `penjual:{id}` ke `pencairan` (`tahan_pencairan`), persetujuan memindahkan dari `pencairan` ke `eksternal` (`pencairan`), dan penolakan mengembalikan dari `pencairan` ke `penjual:{id}` (`batal_pencairan`). Pemutus pencairan harus berbeda dari pengaju (`LP-16`).
+
+## Webhook pembayaran
