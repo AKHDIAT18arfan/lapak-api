@@ -8,6 +8,7 @@ use App\Models\Dompet;
 use App\Models\MutasiSaldo;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
+use App\Services\LayananPembayaran;
 use App\Services\TandaTanganGateway;
 use Database\Seeders\PeranIzinSeeder;
 
@@ -161,3 +162,36 @@ it('tidak menyediakan pintu apa pun bagi pembeli untuk menandai tagihannya lunas
 
     expect($this->tagihan->refresh()->status)->toBe(StatusPembayaran::Menunggu);
 });
+
+it('menandai tagihan yang masih menunggu menjadi dibatalkan', function () {
+    $checkout = Checkout::factory()->create();
+    $pembayaran = Pembayaran::factory()->create([
+        'checkout_id' => $checkout->id,
+        'status' => StatusPembayaran::Menunggu,
+    ]);
+
+    $hasil = DB::transaction(
+        fn () => app(LayananPembayaran::class)->tandaiDibatalkan($checkout)
+    );
+
+    expect($hasil)->toBeTrue()
+        ->and($pembayaran->fresh()->status)->toBe(StatusPembayaran::Dibatalkan);
+});
+
+it('tidak membatalkan tagihan yang statusnya sudah tidak menunggu', function (StatusPembayaran $statusAwal) {
+    $checkout = Checkout::factory()->create();
+    $pembayaran = Pembayaran::factory()->create([
+        'checkout_id' => $checkout->id,
+        'status' => $statusAwal,
+    ]);
+
+    $hasil = DB::transaction(
+        fn () => app(LayananPembayaran::class)->tandaiDibatalkan($checkout)
+    );
+
+    expect($hasil)->toBeFalse()
+        ->and($pembayaran->fresh()->status)->toBe($statusAwal);
+})->with([
+    StatusPembayaran::Lunas,
+    StatusPembayaran::Kedaluwarsa,
+]);

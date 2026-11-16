@@ -18,6 +18,8 @@ enum JenisDompet: string
     /** Saldo milik seorang penjual; satu dompet per penjual. */
     case Penjual = 'penjual';
 
+    case Pencairan = 'pencairan';
+
     public function bolehNegatif(): bool
     {
         return $this === self::Eksternal;
