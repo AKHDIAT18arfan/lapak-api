@@ -48,7 +48,7 @@ final class MesinStatusPesanan
             StatusPesanan::Selesai => ['selesai_pada' => now()],
             StatusPesanan::Dibatalkan => [
                 'dibatalkan_pada' => now(),
-                'dibatalkan_oleh' => $oleh,
+                'dibatalkan_oleh' => $oleh->value,
                 'alasan_batal' => $alasanBatal,
             ],
             default => [],

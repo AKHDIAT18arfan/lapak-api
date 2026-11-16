@@ -70,9 +70,10 @@ final class PesananUji
         $subtotal = self::HARGA * $kuantitas;
         $total = $subtotal + self::ONGKIR;
 
-        $checkout = Checkout::query()->forceCreate([
+        // (PERBARUI) Gunakan Checkout::factory() agar kolom wajib seperti pengenal_sesi terisi otomatis
+        $checkout = Checkout::factory()->create([
             'pembeli_id' => $pembeli->id,
-            'kode' => 'CHK-'.Str::upper(Str::random(10)),
+            'total_rupiah' => $total,
         ]);
 
         Pembayaran::query()->forceCreate([
@@ -80,18 +81,25 @@ final class PesananUji
             'kode' => 'BYR-'.Str::upper(Str::random(10)),
             'status' => $statusTagihan,
             'jumlah_rupiah' => $total,
-            'batas_bayar' => now()->addDay(),
+            'batas_bayar_pada' => now()->addDay(), // (PERBARUI) Sesuaikan nama kolom batas_bayar_pada
         ]);
 
         $pesanan = Pesanan::query()->forceCreate([
             'checkout_id' => $checkout->id,
+            'pembeli_id' => $pembeli->id, // (PERBARUI) Wajib diisi pada tabel pesanan
             'toko_id' => $produk->toko_id,
             'nomor' => 'LPK-'.now()->format('Ymd').'-'.Str::padLeft((string) random_int(1, 999_999), 6, '0'),
             'status' => StatusPesanan::MenungguPembayaran,
             'subtotal_rupiah' => $subtotal,
             'ongkir_rupiah' => self::ONGKIR,
             'total_rupiah' => $total,
-            'alamat_kirim' => 'Jl. Contoh No. 1, Surakarta',
+            'alamat_kirim' => [ // (PERBARUI) Sesuaikan dengan cast array di model Pesanan
+                'nama_penerima' => 'Andi Nugroho',
+                'telepon' => '081200000008',
+                'jalan' => 'Jl. Slamet Riyadi No. 12',
+                'kota' => 'Surakarta',
+                'kode_pos' => '57111',
+            ],
         ]);
 
         ButirPesanan::query()->forceCreate([

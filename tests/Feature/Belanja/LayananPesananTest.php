@@ -169,7 +169,7 @@ it('membatalkan checkout yang belum dibayar: pesanan batal, tagihan ditutup, sto
 it('membatalkan checkout yang lewat batas atas nama sistem', function () {
     $belum = PesananUji::belumDibayar($this->andi, $this->kain);
     Pembayaran::query()->where('checkout_id', $belum->checkout_id)
-        ->update(['batas_bayar' => now()->subMinute()]);
+        ->update(['batas_bayar_pada' => now()->subMinute()]);
 
     $batal = $this->layanan->batalkanCheckout(
         $belum->checkout_id, PelakuPesanan::Sistem, null, 'Tidak dibayar sampai batas waktu',
