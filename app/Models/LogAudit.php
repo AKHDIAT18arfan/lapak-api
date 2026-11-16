@@ -1,0 +1,30 @@
+/** LP-17: log audit hanya bisa ditambah. Kekeliruan dicatat sebagai baris baru. */
+protected static function booted(): void
+{
+    self::updating(fn () => throw new LogicException('LP-17: log audit tidak boleh diubah.'));
+    self::deleting(fn () => throw new LogicException('LP-17: log audit tidak boleh dihapus.'));
+}
+
+/** @return BelongsTo<Pengguna, $this> */
+public function pelaku(): BelongsTo
+{
+    return $this->belongsTo(Pengguna::class, 'pelaku id');
+}
+
+/**
+* Isi yang ikut di-hash. Dipakai PencatatAudit saat menulis dan pemeriksa saat memverifikasi,
+* sehingga keduanya tidak mungkin berbeda pendapat tentang kolom mana yang dilindungi.
+*
+* @return array<string, mixed>
+*/
+public function isiTerlindung(): array
+{
+    return [
+        'peristiwa' => $this->peristiwa,
+        'pelaku_id' => $this->pelaku_id,
+        'sasaran' => $this->sasaran,
+        'rincian' => $this->rincian,
+        'id_permintaan' => $this->id_permintaan,
+        'dicatat_pada' => $this->dicatat_pada->format('Y-m-d H:i:s'),
+    ];
+}
