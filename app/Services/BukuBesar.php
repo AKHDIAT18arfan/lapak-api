@@ -113,9 +113,9 @@ final class BukuBesar
 
         if ($dompet !== null) {
             return $dompet;
-            }
-            
-            try {
+        }
+
+        try {
             $dompet = new Dompet;
             $dompet->forceFill([
                 'kode' => $kode,
@@ -123,14 +123,13 @@ final class BukuBesar
                 'pengguna_id' => $penggunaId,
                 'saldo_rupiah' => 0,
             ])->save();
-        }
 
             return $dompet;
         } catch (UniqueConstraintViolationException) {
-        // Dua pelepasan dana pertama bagi penjual yang sama, pada saat yang sama: keduanya
-        // tidak menemukan dompet lalu sama-sama membuatnya. Indeks unik pada kode menolak
-        // yang kedua, dan yang kedua cukup memakai dompet yang baru saja lahir.
-        return Dompet::query()->where('kode', $kode)->lockForUpdate()->firstOrFail();
+            // Dua pelepasan dana pertama bagi penjual yang sama, pada saat yang sama: keduanya
+            // tidak menemukan dompet lalu sama-sama membuatnya. Indeks unik pada kode menolak
+            // yang kedua, dan yang kedua cukup memakai dompet yang baru saja lahir.
+            return Dompet::query()->where('kode', $kode)->lockForUpdate()->firstOrFail();
         }
     }
 
