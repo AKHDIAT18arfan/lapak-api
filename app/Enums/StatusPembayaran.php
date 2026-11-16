@@ -8,6 +8,6 @@ enum StatusPembayaran: string
 {
     case Menunggu = 'menunggu';
     case Lunas = 'lunas';
-    /** Batas bayar terlewat. Pesanannya dibatalkan dan stoknya dikembalikan (LP-10). */
     case Kedaluwarsa = 'kedaluwarsa';
+    case Dibatalkan = 'dibatalkan';
 }

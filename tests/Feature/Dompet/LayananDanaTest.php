@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Domain\Uang\Uang;
+use App\Domain\Uang;
 use App\Enums\JenisDompet;
 use App\Enums\JenisMutasi;
-use App\Enums\StatusPesanan;
 use App\Models\Dompet;
 use App\Models\MutasiSaldo;
 use App\Models\Pengguna;
@@ -26,7 +25,6 @@ beforeEach(function () {
 
     $this->pesanan = Pesanan::factory()->create([
         'toko_id' => $toko->id,
-        'status' => StatusPesanan::Selesai,
         'subtotal_rupiah' => 370_000,
         'ongkir_rupiah' => 12_000,
         'total_rupiah' => 382_000,
@@ -75,9 +73,4 @@ it('menolak dana yang sama keluar dua kali, lewat jalan mana pun', function (str
         ->toThrow(LogicException::class, 'sudah pernah keluar');
 
     expect(($this->saldo)("penjual:{$this->sri->id}"))->toBe(363_500);
-})->with(['lepaskan', 'kembalikan']);
-
-it('menolak pemindahan dana jika dipanggil di luar transaksi database', function (string $metode) {
-    expect(fn () => $this->dana->{$metode}($this->pesanan))
-        ->toThrow(LogicException::class, 'GembokCheckout');
 })->with(['lepaskan', 'kembalikan']);

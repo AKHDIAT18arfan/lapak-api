@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Domain\Uang\Uang;
+use App\Domain\Uang;
 use App\Enums\JenisDompet;
 use App\Enums\JenisMutasi;
 use App\Models\MutasiSaldo;
