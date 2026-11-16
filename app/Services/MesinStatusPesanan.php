@@ -25,6 +25,7 @@ final class MesinStatusPesanan
         StatusPesanan $ke,
         PelakuPesanan $oleh,
         ?string $alasanBatal = null,
+        ?string $nomorResi = null, // (PERBARUI)
     ): Pesanan {
         if (DB::transactionLevel() === 0) {
             throw new LogicException('Status pesanan hanya boleh diubah di dalam GembokCheckout.');
@@ -36,14 +37,23 @@ final class MesinStatusPesanan
             throw new TransisiPesananTidakSah($terkini->status, $ke);
         }
 
+        // (PERBARUI) Tambah cap waktu dikemas, dikirim (+ nomor_resi), selesai, dan dibatalkan_oleh
         $cap = match ($ke) {
             StatusPesanan::Dibayar => ['dibayar_pada' => now()],
+            StatusPesanan::Dikemas => ['dikemas_pada' => now()],
+            StatusPesanan::Dikirim => [
+                'dikirim_pada' => now(),
+                'nomor_resi' => $nomorResi,
+            ],
+            StatusPesanan::Selesai => ['selesai_pada' => now()],
             StatusPesanan::Dibatalkan => [
                 'dibatalkan_pada' => now(),
+                'dibatalkan_oleh' => $oleh,
                 'alasan_batal' => $alasanBatal,
             ],
             default => [],
         };
+        // (PERBARUI) Akhir pembaruan cap waktu
 
         $terkini->forceFill(['status' => $ke, ...$cap])->save();
 

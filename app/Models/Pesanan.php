@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Pesanan\PelakuPesanan;
 use App\Domain\Pesanan\PenomorPesanan;
 use App\Domain\Pesanan\StatusPesanan;
 use Database\Factories\PesananFactory;
@@ -31,7 +32,11 @@ final class Pesanan extends Model
             'total_rupiah' => 'integer',
             'alamat_kirim' => 'array',
             'dibayar_pada' => 'datetime',
+            'dikemas_pada' => 'datetime',              // (PERBARUI)
+            'dikirim_pada' => 'datetime',              // (PERBARUI)
+            'selesai_pada' => 'datetime',              // (PERBARUI)
             'dibatalkan_pada' => 'datetime',
+            'dibatalkan_oleh' => PelakuPesanan::class, // (PERBARUI)
         ];
     }
 
