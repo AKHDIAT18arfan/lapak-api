@@ -78,3 +78,22 @@
 /app/Console/Commands/Balapan.php                  @nabhanherwastyo
 /app/Console/Commands/BalapanAnak.php              @nabhanherwastyo
 /app/Balapan/                                       @nabhanherwastyo
+
+# Sesi 5: pintu tunggal, log audit, dan berkas rilis
+/app/Services/LayananPesanan.php                     @balasyahda05
+/app/Services/PenyelesaianOtomatis.php               @balasyahda05
+/tests/Pendukung/                                    @balasyahda05
+/app/Http/Controllers/PesananTokoController.php      @ahmadbagasmahardika50 @elangfebryan20
+/app/Services/LayananDana.php                        @DimasAryaPutra
+/app/Services/LayananPencairan.php                   @DimasAryaPutra
+/app/Models/Pencairan.php                            @DimasAryaPutra
+/app/Services/PencatatAudit.php                      @nabhanherwastyo
+/app/Services/PemeriksaRantaiAudit.php               @nabhanherwastyo
+/app/Models/LogAudit.php                             @nabhanherwastyo
+/app/Enums/PeristiwaAudit.php                        @nabhanherwastyo
+/docs/RILIS.md                                       @nabhanherwastyo
+/CHANGELOG.md                                        @AKHDIAT18arfan
+
+# Pengecualian. Pada CODEOWNERS, pola yang cocok PALING AKHIR yang menang.
+/app/Balapan/WebhookGanda.php                        @DimasAryaPutra
+/app/Domain/Audit/                                   @nabhanherwastyo
