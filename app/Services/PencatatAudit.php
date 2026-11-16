@@ -43,7 +43,7 @@ final class PencatatAudit
             // BELUM AMAN bila dua tindakan dicatat bersamaan: keduanya dapat membaca kepala
             // rantai yang sama. Indeks unik pada hash_sebelumnya menolak salah satunya dengan
             // galat, sehingga rantai tidak pernah bercabang diam-diam. Dikunci pada jendela B.
-            $kepala = DB::table('rantai_audit')->where('id', 1)->first();
+            $kepala = DB::table('rantai_audit')->where('id', 1)->lockForUpdate()->first();
 
             if ($kepala === null) {
                 throw new LogicException('Kepala rantai audit tidak ada. Jalankan migrasi.');
