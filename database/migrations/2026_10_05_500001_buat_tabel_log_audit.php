@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -19,7 +19,7 @@ return new class extends Migration
             $tabel->char('id_permintaan', 36)->nullable();
             $tabel->char('hash_sebelumnya', 64)->unique();
             $tabel->char('hash', 64)->unique();
-            
+
             // PERBAIKAN 2: Hapus spasi pada nama kolom menjadi 'dicatat_pada'
             $tabel->dateTime('dicatat_pada');
         });
