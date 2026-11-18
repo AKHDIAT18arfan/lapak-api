@@ -7,7 +7,7 @@ use App\Models\Produk;
 use App\Models\Toko;
 use App\Services\BukuBesar;
 use Illuminate\Support\Str;
-use Tests\Support\PesananUji;
+use Tests\Pendukung\PesananUji;
 
 beforeEach(function () {
     $this->sri = Pengguna::factory()->penjual()->create();
@@ -64,7 +64,7 @@ it('menahan alamat kirim sampai pesanan dibayar', function () {
     $this->getJson(($this->alamat)())
         ->assertOk()
         ->assertJsonPath('data.status', 'dibayar')
-        ->assertJsonPath('data.alamat_kirim.penerima', $this->pesanan->alamat_kirim['penerima'])
+        ->assertJsonPath('data.alamat_kirim.nama_penerima', $this->pesanan->alamat_kirim['nama_penerima'])
         ->assertJsonPath('data.tindakan', ['dikemas', 'dibatalkan']);
 });
 
@@ -115,7 +115,8 @@ it('membatalkan pesanan oleh penjual, mengembalikan stok dan dana secara idempot
 
     // Tanpa Idempotency-Key ditolak.
     $this->postJson(($this->alamat)('/batal'), ['alasan' => 'Stok di gudang rusak'])
-        ->assertBadRequest();
+        ->assertUnprocessable()
+        ->assertJsonPath('galat.kode', 'LP-11');
 
     $pertama = $this->withHeader('Idempotency-Key', $kunci)
         ->postJson(($this->alamat)('/batal'), ['alasan' => 'Stok di gudang rusak'])
@@ -132,7 +133,9 @@ it('membatalkan pesanan oleh penjual, mengembalikan stok dan dana secara idempot
         ->assertHeader('Idempotency-Replayed', 'true')
         ->assertExactJson($pertama->json());
 
-    expect($this->kain->refresh()->stok)->toBe($stokSebelum + 1)
+    $dikembalikan = $this->pesanan->butir->sum('kuantitas');
+
+    expect($this->kain->refresh()->stok)->toBe($stokSebelum + $dikembalikan)
         ->and(($this->saldo)('escrow'))->toBe(0);
 });
 

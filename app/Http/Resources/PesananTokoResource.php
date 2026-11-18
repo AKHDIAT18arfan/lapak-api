@@ -12,9 +12,10 @@ use App\Models\ButirPesanan;
 use App\Models\Pesanan;
 use App\Services\LayananDana;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Pesanan */
-final class PesananTokoResource extends SumberDayaJson
+final class PesananTokoResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
@@ -53,5 +54,11 @@ final class PesananTokoResource extends SumberDayaJson
             'dibatalkan_oleh' => $this->dibatalkan_oleh,
             'alasan_batal' => $this->alasan_batal,
         ];
+    }
+
+    /** @return array{rupiah: int, tampilan: string} */
+    private function uang(Uang $uang): array
+    {
+        return ['rupiah' => $uang->rupiah, 'tampilan' => $uang->format()];
     }
 }
