@@ -44,6 +44,10 @@ return [
         'simpan_hari' => 30,
     ],
 
+    'idempotensi' => [
+        'simpan_hari' => (int) env('LAPAK_IDEMPOTENSI_SIMPAN_HARI', 7),
+    ],
+
     'otorisasi' => [
         // Lama izin seorang pengguna diingat. Perubahan peran melupakannya saat itu juga;
         // angka ini hanya batas atas bila ada jalur yang lupa memanggil lupakan().
