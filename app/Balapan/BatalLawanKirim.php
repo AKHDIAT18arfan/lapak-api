@@ -62,7 +62,7 @@ final class BatalLawanKirim implements SkenarioBalapan
 
     public function jalankan(array $konteks, int $nomor): string
     {
-        $idPesanan = $konteks['pesanan'][intdiv($nomor, 2)];
+        $idPesanan = $konteks['pesanan'][intdiv($nomor - 1, 2)];
         $pesanan = Pesanan::query()->findOrFail($idPesanan);
 
         if ($nomor % 2 === 0) {
