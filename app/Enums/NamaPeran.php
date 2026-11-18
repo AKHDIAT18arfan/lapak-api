@@ -41,7 +41,6 @@ enum NamaPeran: string
             ],
             self::Penjual => [
                 NamaIzin::ProdukKelola,
-                NamaIzin::PesananProses,
                 NamaIzin::DompetLihat,
                 NamaIzin::PencairanAjukan,
             ],

@@ -7,16 +7,17 @@ namespace App\Http\Resources;
 use App\Domain\Uang;
 use App\Models\Pencairan;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Pencairan */
-final class PencairanResource extends SumberDayaJson
+final class PencairanResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         return [
             'kode' => $this->kode,
             'jumlah_rupiah' => $this->jumlah_rupiah,
-            'jumlah' => $this->uang(Uang::dari($this->jumlah_rupiah)),
+            'jumlah' => Uang::dari($this->jumlah_rupiah)->format(),
             'rekening_tujuan' => $this->rekening_tujuan,
             'status' => $this->status->value,
             'catatan' => $this->catatan,
