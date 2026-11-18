@@ -10,4 +10,5 @@ enum StatusPembayaran: string
     case Lunas = 'lunas';
     case Kedaluwarsa = 'kedaluwarsa';
     case Dibatalkan = 'dibatalkan';
+    case Dikembalikan = 'dikembalikan';
 }
