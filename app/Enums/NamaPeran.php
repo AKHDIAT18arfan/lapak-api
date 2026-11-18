@@ -43,7 +43,6 @@ enum NamaPeran: string
                 NamaIzin::ProdukKelola,
                 NamaIzin::PesananProses,
                 NamaIzin::DompetLihat,
-                NamaIzin::PencairanAjukan,
             ],
             self::Admin => [
                 NamaIzin::TokoModerasi,
@@ -51,7 +50,6 @@ enum NamaPeran: string
             ],
             self::Keuangan => [
                 NamaIzin::BukuBesarLihat,
-                NamaIzin::PencairanSetujui,
             ],
             self::Auditor => [
                 NamaIzin::BukuBesarLihat,
