@@ -130,5 +130,7 @@ it('menolak pembatalan checkout yang sudah lunas dengan 409 (LP-10)', function (
 it('menolak permintaan tanpa Idempotency-Key (LP-11)', function () {
     $this->sebagai($this->andi);
 
-    $this->postJson($this->alamat)->assertBadRequest();
+    $this->postJson($this->alamat)
+        ->assertUnprocessable()
+        ->assertJsonPath('galat.kode', 'LP-11');
 });
