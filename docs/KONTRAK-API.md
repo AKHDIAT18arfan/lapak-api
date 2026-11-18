@@ -1,3 +1,9 @@
+## Autentikasi dan sesi
+- Setiap permintaan ke rute terlindung wajib mengirim header `Authorization: Bearer <kunci>`.
+- `POST /masuk` mewajibkan kolom `surel` berformat alamat surel yang sah. Masukan bukan surel ditolak dengan `422 VALIDASI_GAGAL` sebelum dicatat ke log audit agar kata sandi yang salah ketik di kolom surel tidak tersimpan. Percobaan masuk dicatat pada log audit tanpa pernah menyimpan kata sandi yang dicoba (LP-17).
+- `POST /sesi/konfirmasi` menyegarkan sesi (LP-15) sekaligus mengganti kuncinya dan mengembalikan `data.kunci` yang baru. Klien wajib segera mengganti kunci yang disimpan dengan kunci baru tersebut sebelum mengirim permintaan berikutnya.
+- Kunci lama yang sudah digantikan rotasi langsung tidak berlaku (LP-14). Jika kunci lama tersebut dikirim lagi ke server, seluruh sesi terkait langsung dicabut (kunci baru ikut mati), kejadian dicatat sebagai `sesi.kunci_lama_dipakai`, dan server menjawab `401 BELUM_MASUK` sehingga pengguna harus masuk ulang.
+
 ## Otorisasi
 - Kewenangan ditentukan izin yang melekat pada peran, bukan nama peran (LP-2). Satu akun boleh memegang beberapa peran; izinnya adalah gabungan izin seluruh perannya.
 - Rute terlindung menyebut paling banyak satu izin: `->middleware('izin:<nama>')`. Bila dua peran membutuhkan pintu yang sama, keduanya diberi izin yang sama. Rute tidak pernah menyebut nama peran.
@@ -7,6 +13,7 @@
 - Badan 403 `DITOLAK` selalu sama dan tidak menyebut izin apa yang kurang.
 - `GET /saya` menyertakan `pengguna.peran` dan `izin`. Klien memakainya untuk menata tampilan saja; server memutuskan ulang pada setiap permintaan.
 - Peran hanya berubah lewat `App\Services\PengelolaPeran`. Setiap perubahan mencabut seluruh sesi akun itu. Klien yang tiba-tiba menerima 401 mengarahkan penggunanya masuk ulang.
+
 | Peran | Izin |
 | --- | --- |
 | `pembeli` | `keranjang.kelola`, `toko.buka` |
@@ -14,7 +21,9 @@
 | `admin` | `toko.moderasi`, `peran.kelola` |
 | `keuangan` | `buku-besar.lihat` |
 | `auditor` | `buku-besar.lihat` |
+
 Tabel di atas disalin dari `App\Enums\NamaPeran::izinBawaan()`, satu-satunya tempat pemetaan ini ditulis. `PeranIzinSeeder` menyalinnya ke basis data. Tidak ada peran yang memegang seluruh izin.
+
 ## Idempotensi
 - Setiap permintaan yang mengubah uang atau stok wajib membawa header `Idempotency-Key` (LP-11): 16 sampai 64 huruf, angka, garis bawah, atau tanda hubung. UUID memenuhi syarat ini.
 - Klien membuat SATU kunci untuk satu niat, misalnya satu kali menekan tombol bayar, dan memakai kunci yang sama setiap kali mengulang permintaan itu karena jaringan putus atau batas waktu habis.
@@ -22,6 +31,7 @@ Tabel di atas disalin dari `App\Enums\NamaPeran::izinBawaan()`, satu-satunya tem
 - Permintaan yang gagal tidak meninggalkan catatan. Setelah sebabnya dibetulkan, kunci yang sama boleh dipakai lagi.
 - Kunci yang sama dengan badan yang berbeda dijawab 422 `LP-11`. Kunci berlaku per pengguna.
 - Catatan kunci dan seluruh perubahan data berada dalam satu transaksi basis data. Rute yang memasang `idempoten` karenanya tidak boleh memanggil layanan luar di dalam controller-nya.
+
 ## Webhook pembayaran
 - `POST /webhook/pembayaran` adalah satu-satunya rute tulis tanpa kunci sesi. Pemanggilnya gerbang pembayaran. Pembeli tidak memiliki pintu apa pun untuk menandai tagihannya lunas.
 - Gerbang mengirim header `X-Gateway-Signature: t=<detik unix>,v1=<tanda>`, dengan `<tanda>` berupa HMAC-SHA256 atas teks `<t>.<badan mentah>` memakai rahasia bersama `LAPAK_GATEWAY_RAHASIA`.
@@ -36,5 +46,3 @@ Tabel di atas disalin dari `App\Enums\NamaPeran::izinBawaan()`, satu-satunya tem
 - Saat pesanan yang sudah dibayar batal, seluruh `total_rupiah` dikembalikan dari `escrow` ke `eksternal` (`pengembalian`).
 - Tagihan `pembayaran` yang masih `menunggu` dapat dibatalkan pembeli sebelum dibayar menjadi `dibatalkan` (`LayananPembayaran::tandaiDibatalkan`). Jika statusnya sudah `lunas` atau `kedaluwarsa`, pembatalan diabaikan.
 - Pencairan dana penjual dicatat pada tabel `pencairan` dengan kode `CAIR-<ULID>` dan memakai dompet penahan `pencairan`: pengajuan menahan saldo dari `penjual:{id}` ke `pencairan` (`tahan_pencairan`), persetujuan memindahkan dari `pencairan` ke `eksternal` (`pencairan`), dan penolakan mengembalikan dari `pencairan` ke `penjual:{id}` (`batal_pencairan`). Pemutus pencairan harus berbeda dari pengaju (`LP-16`).
-
-## Webhook pembayaran
