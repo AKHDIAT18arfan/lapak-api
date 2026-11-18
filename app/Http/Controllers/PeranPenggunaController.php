@@ -40,10 +40,10 @@ final class PeranPenggunaController extends Controller
         return $this->sukses(PenggunaResource::make($sasaran->load('peran')));
     }
 
-    public function cabut(int $id, NamaPeran $peran): JsonResponse
+    public function cabut(Request $request, int $id, NamaPeran $peran): JsonResponse
     {
         $sasaran = $this->sasaran($id, $peran);
-        $this->pengelola->cabut($sasaran, $peran);
+        $this->pengelola->cabut($sasaran, $peran, $request->user());
 
         return $this->sukses(PenggunaResource::make($sasaran->load('peran')));
     }

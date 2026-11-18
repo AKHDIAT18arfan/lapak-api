@@ -4,20 +4,27 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\PeristiwaAudit;
 use App\Exceptions\KredensialSalah;
 use App\Http\Requests\KonfirmasiSandiRequest;
 use App\Http\Resources\PenggunaResource;
 use App\Http\Resources\SesiResource;
+use App\Models\Pengguna;
 use App\Models\Sesi;
 use App\Services\PemeriksaIzin;
 use App\Services\PemeriksaKataSandi;
+use App\Services\PencatatAudit;
 use App\Services\PenerbitSesi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class SesiController extends Controller
 {
-    public function __construct(private readonly PenerbitSesi $penerbit) {}
+    public function __construct(
+        private readonly PenerbitSesi $penerbit,
+        private readonly PencatatAudit $audit,
+    ) {}
 
     /**
      * GET /saya: siapa saya, apa yang boleh saya lakukan, dan lewat sesi yang mana.
@@ -49,7 +56,7 @@ final class SesiController extends Controller
     /** POST /keluar: mencabut sesi yang sedang dipakai. Perangkat lain tidak terpengaruh. */
     public function keluar(Request $request): JsonResponse
     {
-        $this->penerbit->cabut(Sesi::dariPermintaan($request));
+        $this->cabutDenganJejak(Sesi::dariPermintaan($request), $request->user());
 
         return $this->sukses();
     }
@@ -88,8 +95,21 @@ final class SesiController extends Controller
             ->where('pengenal', $pengenal)
             ->firstOrFail();
 
-        $this->penerbit->cabut($sesi);
+        $this->cabutDenganJejak($sesi, $request->user());
 
         return $this->sukses();
+    }
+
+    private function cabutDenganJejak(Sesi $sesi, Pengguna $pelaku): void
+    {
+        DB::transaction(function () use ($sesi, $pelaku): void {
+            $this->penerbit->cabut($sesi);
+            $this->audit->catat(
+                PeristiwaAudit::SesiDicabut,
+                $pelaku,
+                "sesi:{$sesi->pengenal}",
+                ['perangkat' => $sesi->nama_perangkat],
+            );
+        });
     }
 }
