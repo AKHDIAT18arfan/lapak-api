@@ -20,6 +20,10 @@ use LogicException;
  *     atas tindakan yang batal.
  *  2. catat() adalah langkah TERAKHIR sebelum transaksi selesai. Tidak ada kunci baris lain
  *     yang diambil sesudahnya (docs/PETA-SKEMA.md, anak tangga terakhir).
+ *
+ * Aturan kedua punya alasan lain selain kebuntuan. Kepala rantai adalah SATU baris untuk seluruh
+ * aplikasi: sejak catat() dipanggil sampai transaksinya selesai, setiap tindakan lain yang ingin
+ * mencatat menunggu. Makin akhir catat() dipanggil, makin singkat antrean itu.
  */
 final class PencatatAudit
 {
@@ -43,6 +47,9 @@ final class PencatatAudit
             // BELUM AMAN bila dua tindakan dicatat bersamaan: keduanya dapat membaca kepala
             // rantai yang sama. Indeks unik pada hash_sebelumnya menolak salah satunya dengan
             // galat, sehingga rantai tidak pernah bercabang diam-diam. Dikunci pada jendela B.
+            // Kepala rantai dikunci lebih dulu, baru hash terakhir dibaca darinya. Dua tindakan
+            // yang selesai bersamaan antre di baris ini: yang kedua menunggu sampai transaksi
+            // yang pertama selesai, lalu menyambung ke hash milik yang pertama.
             $kepala = DB::table('rantai_audit')->where('id', 1)->lockForUpdate()->first();
 
             if ($kepala === null) {
