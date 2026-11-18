@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\PeristiwaAudit;
+use App\Models\LogAudit;
 use App\Models\Pengguna;
 use App\Models\Sesi;
 use App\Services\PemeriksaSesi;
@@ -19,8 +21,9 @@ it('menyimpan hash dan tidak menyimpan rahasia di kolom mana pun (LP-14)', funct
     $baris = (array) DB::table('sesi')->first();
 
     expect($baris['hash_kunci'])->toBe(hash('sha256', $rahasia))
+        ->and($baris['hash_kunci_lama'])->toBeNull()
         ->and(json_encode($baris))->not->toContain($rahasia)
-        ->and($this->sesi->toArray())->not->toHaveKey('hash_kunci');
+        ->and($this->sesi->toArray())->not->toHaveKeys(['hash_kunci', 'hash_kunci_lama']);
 });
 
 it('menerima kunci yang sah dan memuat penggunanya', function () {
@@ -34,7 +37,9 @@ it('menolak pengenal yang benar dengan rahasia yang salah', function () {
     $palsu = 'lpk_'.$this->sesi->pengenal.'.'.str_repeat('0', 64);
 
     expect($this->pemeriksa->periksa($palsu))->toBeNull()
-        ->and($this->pemeriksa->periksa(null))->toBeNull();
+        ->and($this->pemeriksa->periksa(null))->toBeNull()
+        ->and($this->sesi->refresh()->dicabut_pada)->toBeNull()
+        ->and(LogAudit::count())->toBe(0);
 });
 
 it('menolak sesi yang sudah dicabut', function () {
@@ -80,10 +85,24 @@ it('mencatat pemakaian paling sering satu kali per menit', function () {
     expect($this->sesi->refresh()->terakhir_dipakai_pada->gt($awal))->toBeTrue();
 });
 
-it('mematikan kunci lama saat dirotasi tanpa mengganti sesinya', function () {
+it('mengganti kunci dan menyimpan hash kunci lama tanpa mengganti sesinya', function () {
+    $hashAwal = $this->sesi->hash_kunci;
+    $kunciBaru = $this->penerbit->rotasi($this->sesi);
+
+    expect($this->sesi->refresh()->hash_kunci_lama)->toBe($hashAwal)
+        ->and($this->pemeriksa->periksa($kunciBaru)?->pengenal)->toBe($this->sesi->pengenal)
+        ->and(Sesi::count())->toBe(1);
+});
+
+it('mencabut sesi dan mencatat audit ketika kunci lama hasil rotasi dipakai lagi', function () {
     $kunciBaru = $this->penerbit->rotasi($this->sesi);
 
     expect($this->pemeriksa->periksa($this->kunci))->toBeNull()
-        ->and($this->pemeriksa->periksa($kunciBaru)?->pengenal)->toBe($this->sesi->pengenal)
-        ->and(Sesi::count())->toBe(1);
+        ->and($this->sesi->refresh()->dicabut_pada)->not->toBeNull()
+        ->and($this->pemeriksa->periksa($kunciBaru))->toBeNull();
+
+    $jejak = LogAudit::query()->where('peristiwa', PeristiwaAudit::KunciLamaDipakai->value)->sole();
+    expect($jejak->pelaku_id)->toBe($this->pengguna->id)
+        ->and($jejak->sasaran)->toBe("sesi:{$this->sesi->pengenal}")
+        ->and($jejak->rincian)->toBe(['perangkat' => 'Laptop uji']);
 });

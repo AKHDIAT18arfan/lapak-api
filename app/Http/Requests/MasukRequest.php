@@ -23,11 +23,15 @@ final class MasukRequest extends FormRequest
     /**
      * Aturan di sini sengaja longgar. Syarat panjang dan susunan kata sandi adalah urusan registrasi;
      * menerapkannya saat masuk hanya memberi tahu penyerang bentuk kata sandi yang sah.
+     *
+     * Surel wajib berbentuk surel sejak percobaan masuk dicatat pada log audit (LP-17). Orang
+     * kadang mengetik kata sandinya di kolom surel; isian seperti itu harus gugur di sini,
+     * sebelum sempat menjadi rincian sebuah jejak yang tidak dapat dihapus.
      */
     public function rules(): array
     {
         return [
-            'surel' => ['required', 'string', 'max:150'],
+            'surel' => ['required', 'string', 'email', 'max:150'],
             'kata_sandi' => ['required', 'string', 'max:72'],
             'nama_perangkat' => ['sometimes', 'string', 'max:60'],
         ];
