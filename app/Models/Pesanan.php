@@ -72,4 +72,10 @@ final class Pesanan extends Model
     {
         $kueri->where('pesanan.pembeli_id', $pembeli->id);
     }
+
+    /** Pesanan yang masuk ke toko tertentu (pintu penjual, Langkah 6). */
+    public function scopeMilikToko(Builder $kueri, Toko $toko): void
+    {
+        $kueri->where('toko_id', $toko->id);
+    }
 }

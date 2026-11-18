@@ -12,4 +12,9 @@ return [
     'GET api/v1/admin/toko' => ['admin'],
     'POST api/v1/admin/toko/{id}/setujui' => ['admin'],
     'POST api/v1/admin/toko/{id}/tangguhkan' => ['admin'],
+    'GET api/v1/toko-saya/pesanan' => 'pesanan.proses',
+    'GET api/v1/toko-saya/pesanan/{nomor}' => 'pesanan.proses',
+    'POST api/v1/toko-saya/pesanan/{nomor}/kemas' => 'pesanan.proses',
+    'POST api/v1/toko-saya/pesanan/{nomor}/kirim' => 'pesanan.proses',
+    'POST api/v1/toko-saya/pesanan/{nomor}/batal' => 'pesanan.proses',
 ];

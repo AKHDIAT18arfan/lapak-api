@@ -3,6 +3,7 @@
 use App\Enums\NamaPeran;
 use App\Enums\StatusToko;
 use App\Exceptions\TransisiTokoTidakSah;
+use App\Models\LogAudit;
 use App\Models\Pengguna;
 use App\Models\Produk;
 use App\Models\Toko;
@@ -102,4 +103,22 @@ it('melarang admin memoderasi tokonya sendiri', function () {
         ->and($adminBerjualan->punyaPeran(NamaPeran::Penjual))->toBeFalse();
 
     $this->sebagai($this->admin)->postJson("/api/v1/admin/toko/{$tokoSendiri->id}/setujui")->assertOk();
+});
+
+it('mencatat keputusan atas toko pada log audit beserta alasannya (LP-17)', function () {
+    $this->sebagai($this->admin);
+    $alasan = 'Menjual barang yang dilarang peraturan';
+
+    $this->postJson("/api/v1/admin/toko/{$this->tokoTini->id}/setujui")->assertOk();
+    $this->postJson("/api/v1/admin/toko/{$this->tokoTini->id}/tangguhkan", ['alasan' => $alasan])
+        ->assertOk();
+
+    // Hanya jejak milik domain ini yang diperiksa. Pemberian peran penjual yang menyertai
+    // persetujuan dicatat PengelolaPeran sebagai peristiwanya sendiri, dan diuji di domain D1.
+    $jejak = LogAudit::query()->where('peristiwa', 'like', 'toko.%')->orderBy('id')->get();
+
+    expect($jejak->pluck('peristiwa')->all())->toBe(['toko.disetujui', 'toko.ditangguhkan'])
+        ->and($jejak->pluck('pelaku_id')->unique()->all())->toBe([$this->admin->id])
+        ->and($jejak[0]->sasaran)->toBe("toko:{$this->tokoTini->id}")
+        ->and($jejak[1]->rincian['alasan'])->toBe($alasan);
 });
