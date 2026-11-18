@@ -73,6 +73,21 @@ final class PeriksaBuku extends Command
             $pelanggaran[] = "Saldo escrow {$escrow}, tetapi dana pesanan yang ditahan {$ditahan}.";
         }
 
+        // 6. Dana pencairan yang ditahan sama dengan jumlah pengajuan yang masih menunggu.
+        // Seperti invarian 5, ini mengikat buku besar ke tabel lain: setiap rupiah di dompet
+        // pencairan dapat ditunjuk pengajuannya (LP-16).
+        $menunggu = (int) Pencairan::query()
+            ->where('status', StatusPencairan::Menunggu)
+            ->sum('jumlah_rupiah');
+        $tahanan = (int) Dompet::query()
+            ->where('kode', JenisDompet::Pencairan->value)
+            ->value('saldo_rupiah');
+
+        if ($tahanan !== $menunggu) {
+            $pelanggaran[] = "Saldo dompet pencairan {$tahanan}, tetapi pengajuan yang menunggu "
+                ."berjumlah {$menunggu}.";
+        }
+
         $this->table(['Dompet', 'Jenis', 'Saldo (Rp)'], $baris);
 
         if ($pelanggaran !== []) {
