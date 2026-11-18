@@ -21,6 +21,7 @@ enum NamaIzin: string
     case BukuBesarLihat = 'buku-besar.lihat';
     case PencairanAjukan = 'pencairan.ajukan';
     case PencairanSetujui = 'pencairan.setujui';
+    case AuditLihat = 'audit.lihat';
 
     public function keterangan(): string
     {
@@ -36,6 +37,7 @@ enum NamaIzin: string
             self::BukuBesarLihat => 'Membaca seluruh dompet dan mutasi marketplace',
             self::PencairanAjukan => 'Mengajukan pencairan saldo dompet penjual',
             self::PencairanSetujui => 'Menyetujui atau menolak pengajuan pencairan penjual',
+            self::AuditLihat => 'Melihat log audit dan ujung rantai hash',
         };
     }
 }
