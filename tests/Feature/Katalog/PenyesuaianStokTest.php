@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\KunciIdempotensi;
+use App\Models\LogAudit;
 use App\Models\Pengguna;
 use App\Models\Produk;
 use App\Models\Toko;
@@ -97,4 +98,22 @@ it('tidak lagi menerima stok mutlak lewat PATCH produk', function () {
     $this->patchJson($alamat, ['nama' => 'Kain Batik Tulis'])
         ->assertOk()
         ->assertJsonPath('data.stok', 10);
+});
+
+it('mencatat setiap penyesuaian stok pada log audit, satu kali per niat (LP-17)', function () {
+    $this->sebagai($this->sri);
+
+    ($this->sesuaikan)(5)->assertOk();
+    ($this->sesuaikan)(5)->assertOk()->assertHeader('Idempotency-Replayed', 'true');
+    ($this->sesuaikan)(-12, 'koreksi-kain-0001')->assertOk();
+    // Ditolak: stok tidak berubah, maka tidak ada yang dicatat.
+    ($this->sesuaikan)(-99, 'koreksi-kain-0002')->assertStatus(409);
+
+    $jejak = LogAudit::query()->orderBy('id')->get();
+
+    expect($jejak->pluck('peristiwa')->all())->toBe(['stok.disesuaikan', 'stok.disesuaikan'])
+        ->and($jejak->pluck('pelaku_id')->unique()->all())->toBe([$this->sri->id])
+        ->and($jejak[0]->sasaran)->toBe("produk:{$this->kain->id}")
+        ->and($jejak[0]->rincian)->toEqual(['selisih' => 5, 'stok_setelah' => 15])
+        ->and($jejak[1]->rincian)->toEqual(['selisih' => -12, 'stok_setelah' => 3]);
 });
